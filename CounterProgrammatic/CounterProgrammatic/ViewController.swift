@@ -11,9 +11,10 @@ import SwiftUI
 final class ViewController: UIViewController {
     
     var currentNum = 0
+    var minNum = -10
+    var maxNum = 10
     
-    
-    private var numberText: UILabel = {
+    private lazy var numberText: UILabel = {
         let label = UILabel()
         label.text = "0"
         label.font = .systemFont(ofSize: 24, weight: .bold) // 텍스트 사이즈, 굵기
@@ -69,6 +70,8 @@ final class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
+       
+        
         updateUI()
         
         setUI()
@@ -80,9 +83,10 @@ final class ViewController: UIViewController {
         updateButtonStates()
     }
 
+    // Hint
     private func updateButtonStates() {
-        plusBtn.isEnabled = currentNum < 10
-        minusBtn.isEnabled = currentNum > -10
+        plusBtn.isEnabled = currentNum < maxNum
+        minusBtn.isEnabled = currentNum > minNum
     }
     
     @objc private func plusBtnClicked() {
@@ -102,9 +106,9 @@ final class ViewController: UIViewController {
     
     
     private func setUI() {
-    
-        view.backgroundColor = .white
         
+        view.backgroundColor = .white
+            
         // UIKit에서는 UIViewController가 view라는 기본 뷰를 제공
         // 하지만 우리가 만든 UI 요소(numberText, resetBtn, plusBtn, minusBtn)는 기본적으로 view에 포함되지 않음
         // 그래서 직접 view.addSubview(_:)를 호출해서 view의 하위 뷰로 추가해야 함
