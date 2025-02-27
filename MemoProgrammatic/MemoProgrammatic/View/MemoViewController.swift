@@ -108,12 +108,22 @@ class MemoViewController: UIViewController {
             alertTextField.placeholder = "메모할 내용을 입력하세요."
             textField = alertTextField
             
-            NotificationCenter.default.addObserver(forName: UITextField.textDidChangeNotification, object: textField, queue: .main) { _ in
-                addAction.isEnabled = !((textField.text?.isEmpty) == true)
-            }
+            //            NotificationCenter.default.addObserver(forName: UITextField.textDidChangeNotification, object: textField, queue: .main) { _ in
+            //                addAction.isEnabled = !((textField.text?.isEmpty) == true)
+            //            }
+            
+            // textField 비어있으면 추가 버튼 비활성화
+            NotificationCenter.default.publisher(for: UITextField.textDidChangeNotification, object: textField)
+                .map { _ in !(textField.text?.isEmpty ?? true) }
+                .receive(on: DispatchQueue.main)
+                .sink { isEnabled in
+                    addAction.isEnabled = isEnabled
+                }
+                .store(in: &self.cancellables)
         }
         
-        alert.addAction(UIAlertAction(title: "취소", style: .destructive, handler: nil))
+        
+        alert.addAction(UIAlertAction(title: "취소", style: .destructive))
         alert.addAction(addAction)
         present(alert, animated: true)
     }
