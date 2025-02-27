@@ -6,15 +6,12 @@
 //
 
 import UIKit
-import RealmSwift
-
+import Combine
 
 class MemoViewController: UIViewController {
     
-    let realm = try! Realm()
-    
-    var memo: Results<Memo>?
-    
+    private let viewModel = MemoViewModel()
+    private var cancellables = Set<AnyCancellable>()
     
     private lazy var titleLabel: UILabel = {
         let label = UILabel()
@@ -56,7 +53,7 @@ class MemoViewController: UIViewController {
         
         self.view.backgroundColor = .white
         
-        loadData()
+        viewModel.loadData()
         setUI()
     }
     
@@ -86,40 +83,25 @@ class MemoViewController: UIViewController {
         ])
     }
     
-    
-    
-    func saveData(_ memo: Memo) {
-        
-        do {
-            try realm.write {
-                realm.add(memo)
+    private func bindViewModel() {
+        viewModel.$memos
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.memoTableView.reloadData()
             }
-        } catch {
-            print("메모 추가 에러, \(error)")
-        }
-        
-        memoTableView.reloadData()
+            .store(in: &cancellables)
     }
     
-    func loadData() {
-        
-        memo = realm.objects(Memo.self)
-        
-        memoTableView.reloadData()
-        
-    }
     
     @objc private func addMemo() {
         
         var textField = UITextField()
         let alert = UIAlertController(title: "새 메모", message: "", preferredStyle: .alert)
         let addAction = UIAlertAction(title: "추가", style: .default) { _ in
-            let newMemo = Memo()
-            newMemo.memoText = textField.text!
-            
-            self.saveData(newMemo)
+            guard let text = textField.text, !text.isEmpty else { return }
+            self.viewModel.addMemo(text)
+            self.memoTableView.reloadData()
         }
-        
         addAction.isEnabled = false
         
         alert.addTextField { (alertTextField) in
@@ -133,9 +115,7 @@ class MemoViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "취소", style: .destructive, handler: nil))
         alert.addAction(addAction)
-        
-        
-        self.present(alert, animated: true, completion: nil)
+        present(alert, animated: true)
     }
 }
 
@@ -144,28 +124,23 @@ class MemoViewController: UIViewController {
 extension MemoViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return memo?.count ?? 1
+        return viewModel.memos?.count ?? 1
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MemoCell", for: indexPath)
         
-        cell.textLabel?.text = memo?[indexPath.row].memoText ?? "메모없음"
+        cell.textLabel?.text = viewModel.memos?[indexPath.row].memoText ?? "메모없음"
         
         return cell
     }
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         
-        if let memoForDeletion = self.memo?[indexPath.row]
+        if (self.viewModel.memos?[indexPath.row]) != nil
         {
-            do {
-                try self.realm.write {
-                    self.realm.delete(memoForDeletion)
-                }
-            } catch {
-                print("Error deleting category, \(error)")
-            }
+            viewModel.deleteMemo(at: indexPath.row)
+            
             tableView.reloadData()
         }
     }
