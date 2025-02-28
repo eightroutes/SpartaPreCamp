@@ -8,7 +8,7 @@
 import UIKit
 import Combine
 
-class MemoViewController: UIViewController {
+final class MemoViewController: UIViewController {
     
     private let viewModel = MemoViewModel()
     private var cancellables = Set<AnyCancellable>()
@@ -17,7 +17,7 @@ class MemoViewController: UIViewController {
         let label = UILabel()
         label.text = "메모"
         label.font = .systemFont(ofSize: 32, weight: .bold)
-        label.textAlignment = .center
+        label.textAlignment = .left
         
         return label
     }()
@@ -27,22 +27,17 @@ class MemoViewController: UIViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "MemoCell")
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.clipsToBounds = true
         
         return tableView
-        
     }()
-    
     
     private lazy var addBtn: UIButton = {
         let addBtn = UIButton()
         addBtn.setImage(UIImage(systemName: "plus"), for: .normal)
         addBtn.configuration = .filled()
         addBtn.tintColor = .black
-        addBtn.clipsToBounds = true
         
         addBtn.addTarget(self, action: #selector(addMemo), for: .touchUpInside)
-        
         
         return addBtn
     }()
@@ -79,6 +74,7 @@ class MemoViewController: UIViewController {
             
             titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
             titleLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
             titleLabel.bottomAnchor.constraint(equalTo: memoTableView.topAnchor, constant: -10)
         ])
     }
@@ -112,6 +108,7 @@ class MemoViewController: UIViewController {
             //                addAction.isEnabled = !((textField.text?.isEmpty) == true)
             //            }
             
+            
             // textField 비어있으면 추가 버튼 비활성화
             NotificationCenter.default.publisher(for: UITextField.textDidChangeNotification, object: textField)
                 .map { _ in !(textField.text?.isEmpty ?? true) }
@@ -121,8 +118,6 @@ class MemoViewController: UIViewController {
                 }
                 .store(in: &self.cancellables)
         }
-        
-        
         alert.addAction(UIAlertAction(title: "취소", style: .destructive))
         alert.addAction(addAction)
         present(alert, animated: true)
@@ -139,12 +134,13 @@ extension MemoViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MemoCell", for: indexPath)
-        
+        cell.textLabel?.numberOfLines = 0 // 0 -> 줄 무한
         cell.textLabel?.text = viewModel.memos?[indexPath.row].memoText ?? "메모없음"
         
         return cell
     }
     
+    // swipe delete
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         
         if (self.viewModel.memos?[indexPath.row]) != nil
